@@ -1,0 +1,284 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{enumitem} 
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+
+
+\title{\textbf{Ingredient Vision Recipe Finder}\\
+MVP Technical Design Document}
+\author{}
+\date{February 2026}
+
+\begin{document}
+\maketitle
+\onehalfspacing
+
+\section{Product Overview}
+
+The \textbf{Ingredient Vision Recipe Finder} is a web-based, mobile-friendly application that enables users to take a photo of available cooking ingredients and receive realistic, cookable recipe recommendations. The system leverages computer vision and AI-based reasoning to identify ingredients from images, normalize them into canonical food items, and match them against a recipe database.
+
+\subsection*{MVP Goal}
+Convert a single image of ingredients into \textbf{3--5 usable recipes} in under \textbf{10 seconds}.
+
+\section{MVP Scope Definition}
+
+\subsection{In Scope}
+\begin{itemize}
+    \item Image upload via camera or file input
+    \item Ingredient detection from images
+    \item User confirmation and editing of detected ingredients
+    \item Recipe matching and ranking
+    \item Recipe detail view (ingredients and preparation steps)
+    \item Deployed production MVP
+\end{itemize}
+
+\subsection{Out of Scope (Post-MVP)}
+\begin{itemize}
+    \item User accounts and profiles
+    \item Grocery delivery integrations
+    \item Nutrition tracking
+    \item Meal planning and history
+    \item Native mobile applications
+\end{itemize}
+
+\section{System Architecture Overview}
+
+The system follows a client--server architecture with asynchronous AI processing and external API integrations.
+
+\begin{itemize}
+    \item Frontend: User interface and image capture
+    \item Backend: Image processing, AI orchestration, and recipe matching
+    \item AI Services: Vision-based ingredient detection and text-based normalization
+    \item External APIs: Spoonacular recipe data
+    \item Storage: AWS S3 for image persistence
+\end{itemize} 
+
+
+
+\section{Core User Flow}
+
+\begin{enumerate}
+    \item User uploads or captures an image of ingredients
+    \item Backend sends the image to the vision model
+    \item Vision model returns detected ingredient labels
+    \item User confirms or edits the ingredient list
+    \item Backend matches ingredients against recipe data
+    \item Ranked recipes are returned to the frontend
+\end{enumerate}
+
+\section{AI Image Processing}
+
+\subsection{Selected Approach}
+\begin{itemize}
+    \item \textbf{OpenAI Vision API} for image-to-ingredient detection
+    \item \textbf{GPT-based normalization} for canonical ingredient naming
+\end{itemize}
+
+\subsection{Example Output}
+\begin{verbatim}
+["chicken breast", "onion", "garlic", "bell pepper"]
+\end{verbatim}
+
+\section{Recipe Matching Logic}
+
+\subsection{Recipe Source}
+\begin{itemize}
+    \item Spoonacular API
+\end{itemize}
+
+\subsection{Matching Algorithm (MVP)}
+\begin{enumerate}
+    \item Count exact ingredient overlaps
+    \item Penalize missing ingredients
+    \item Rank recipes by simplicity
+\end{enumerate}
+
+\[
+\text{Score} = (\text{matched ingredients} \times 2) - \text{missing ingredients}
+\]
+
+\section{Technology Stack}
+
+\subsection{Frontend}
+\begin{itemize}
+    \item Next.js
+    \item Tailwind CSS
+    \item Browser Camera and File APIs
+\end{itemize}
+
+\subsection{Backend}
+\begin{itemize}
+    \item Python FastAPI
+    \item RESTful APIs
+    \item Asynchronous request handling
+\end{itemize}
+
+\subsection{AI / ML}
+\begin{itemize}
+    \item OpenAI Vision API
+    \item GPT for ingredient normalization
+\end{itemize}
+
+\subsection{Infrastructure}
+\begin{itemize}
+    \item Frontend Hosting: Vercel
+    \item Backend Hosting: Railway
+    \item Object Storage: AWS S3
+\end{itemize}
+
+\section{Development Timeline}
+
+\begin{itemize}
+    \item \textbf{Week 1 (Feb 9--13):} Planning, API design, repo setup, frontend scaffold
+    \item \textbf{Week 2 (Feb 16--20):} Image upload, vision integration, ingredient extraction
+    \item \textbf{Week 3 (Feb 23--27):} Recipe matching logic, ranking, UI components
+    \item \textbf{Week 4 (Mar 2--6):} Error handling, UX polish, deployment
+    \item \textbf{Week 5 (Optional):} Accuracy improvements, caching, UI animations
+\end{itemize}
+
+\section{MVP Success Criteria}
+
+\begin{itemize}
+    \item Ingredient detection accuracy $\geq$ 80\%
+    \item End-to-end recipe generation under 10 seconds
+    \item Fully automated flow without manual intervention
+    \item Publicly accessible deployed demo
+\end{itemize}
+
+\section{API and Infrastructure Cost Analysis}
+
+\begin{center}
+\begin{tabular}{l c}
+\toprule
+\textbf{Service} & \textbf{Estimated Monthly Cost} \\
+\midrule
+OpenAI Vision API & \$10--15 \\
+GPT (Text Normalization) & $<$\$1 \\
+Spoonacular API & \$0 (Free Tier) \\
+AWS S3 Storage & $<$\$1 \\
+Backend Hosting (Railway) & $\sim$\$10 \\
+Frontend Hosting (Vercel) & \$0 \\
+\midrule
+\textbf{Total} & \textbf{\$20--25} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Future Enhancements}
+
+\begin{itemize}
+    \item User accounts and saved recipes
+    \item Nutritional analysis
+    \item Meal planning and grocery list generation
+    \item Mobile application (React Native)
+\end{itemize}
+
+\section{Resume-Ready Description}
+
+Built an AI-powered web application that transforms images of available ingredients into ranked, cookable recipe recommendations using computer vision, natural language processing, and cost-optimized API integrations. 
+
+\section{User Interface Design Considerations}
+
+The user interface of the Ingredient Vision Recipe Finder is designed to be minimal, intuitive, and mobile-first, while remaining fully functional on desktop devices. The UI prioritizes speed, clarity, and user control, particularly given the probabilistic nature of AI-based ingredient detection.
+
+The application follows a step-based interaction model, where each screen focuses on a single primary user action.
+
+\subsection{Design Principles}
+
+\begin{itemize}
+    \item \textbf{Simplicity:} Each screen presents a single, clear call-to-action.
+    \item \textbf{Transparency:} Users are informed when AI processing is occurring.
+    \item \textbf{User Control:} Detected ingredients are editable prior to recipe matching.
+    \item \textbf{Mobile-First:} All layouts are optimized for small screens.
+\end{itemize}
+
+\subsection{Primary UI Screens}
+
+\subsubsection{Image Upload Screen}
+
+The image upload screen serves as the primary entry point to the application. Users may capture a photo using their device camera or upload an existing image from local storage.
+
+\begin{itemize}
+    \item Prominent camera and upload buttons
+    \item Minimal visual distractions
+    \item Supported image format guidance
+\end{itemize}
+
+This screen intentionally avoids secondary navigation to reduce cognitive load and guide users toward immediate action.
+
+\subsubsection{Image Preview and Processing State}
+
+After image submission, users are presented with a preview of the uploaded image alongside a processing indicator. This state reassures users that the system is actively analyzing their input.
+
+\begin{itemize}
+    \item Uploaded image preview
+    \item Loading animation or progress indicator
+    \item Informational messaging indicating analysis time
+\end{itemize}
+
+\subsubsection{Ingredient Confirmation Screen}
+
+The ingredient confirmation screen is a critical component of the user experience. Because computer vision outputs may contain inaccuracies, users are given full control to modify the detected ingredient list before proceeding.
+
+\begin{itemize}
+    \item Editable ingredient chips
+    \item Ability to remove incorrectly detected ingredients
+    \item Manual addition of missing ingredients
+    \item Explicit confirmation action to proceed
+\end{itemize}
+
+This screen increases user trust and improves overall recipe matching accuracy.
+
+\subsubsection{Recipe Results Screen}
+
+The recipe results screen displays a ranked list of recipe recommendations based on the confirmed ingredient set.
+
+\begin{itemize}
+    \item Recipe cards displaying recipe name and match quality
+    \item Indicators for missing ingredients
+    \item Clear call-to-action to view recipe details
+\end{itemize}
+
+The number of displayed recipes is intentionally limited to reduce decision fatigue.
+
+\subsubsection{Recipe Detail Screen}
+
+The recipe detail screen presents all necessary information for meal preparation in a clear, structured format.
+
+\begin{itemize}
+    \item Ingredient list with matched and missing indicators
+    \item Step-by-step cooking instructions
+    \item Optional external recipe source link
+\end{itemize}
+
+The layout prioritizes readability and usability on mobile devices.
+
+\subsection{UI States and Error Handling}
+
+The interface explicitly accounts for non-ideal scenarios to prevent user confusion and abandonment.
+
+\begin{itemize}
+    \item Image upload failures
+    \item AI processing timeouts
+    \item No matching recipes found
+\end{itemize}
+
+In each case, users are provided with actionable feedback and the ability to retry or adjust inputs.
+
+\subsection{Future UI Enhancements}
+
+Post-MVP UI improvements may include:
+\begin{itemize}
+    \item Ingredient confidence indicators
+    \item Recipe match strength visualizations
+    \item Subtle animations to mask processing latency
+\end{itemize}
+
+\end{document}
