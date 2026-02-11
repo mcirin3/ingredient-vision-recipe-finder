@@ -1,0 +1,256 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{xcolor}
+
+\titleformat{\section}
+  {\large\bfseries}{\thesection}{1em}{}
+
+\titleformat{\subsection}
+  {\normalsize\bfseries}{\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}
+  {\normalsize\itshape}{\thesubsubsection}{1em}{}
+
+\setlist[itemize]{noitemsep, topsep=4pt}
+\setlist[enumerate]{noitemsep, topsep=4pt}
+
+\title{\textbf{Ingredient Vision Recipe Finder}\\MVP Test Plan}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Purpose}
+
+Validate that the end-to-end flow
+\textbf{(Image Upload $\rightarrow$ Ingredient Detection $\rightarrow$ Recipe Matching)}
+is reliable, reasonable, and demo-safe under realistic conditions.
+
+\section{Image Upload \& Input Validation}
+
+\subsection*{TC-1: Valid Image Upload}
+\textbf{Input:} Clear JPG/PNG of ingredients
+\begin{itemize}
+  \item Image uploads successfully
+  \item No errors
+  \item Backend receives file
+  \item Processing begins immediately
+\end{itemize}
+\textbf{Demo Critical}
+
+\subsection*{TC-2: Unsupported File Type}
+\textbf{Input:} PDF / TXT / HEIC
+\begin{itemize}
+  \item User-friendly error message
+  \item No backend crash
+  \item No processing attempt
+\end{itemize}
+
+\subsection*{TC-3: Large Image File}
+\textbf{Input:} High-resolution image ($>$10MB)
+\begin{itemize}
+  \item Upload succeeds or fails gracefully
+  \item No timeout
+  \item Clear feedback if rejected
+\end{itemize}
+
+\subsection*{TC-4: Empty Submission}
+\textbf{Input:} Submit without selecting image
+\begin{itemize}
+  \item Frontend prevents submission
+  \item Clear prompt to upload an image
+\end{itemize}
+
+\section{Vision Model Ingredient Detection}
+
+\subsection*{TC-5: Clear Ingredient Layout}
+\textbf{Input:} Clean ingredient image (e.g., steak taco setup)
+\begin{itemize}
+  \item Correct ingredient detection
+  \item $\geq$ 80\% accuracy
+  \item No hallucinated ingredients
+\end{itemize}
+
+\subsection*{TC-6: Partial Ingredients Visible}
+\textbf{Input:} Only 2--3 visible ingredients
+\begin{itemize}
+  \item Detect visible items only
+  \item No forced guessing
+  \item Recipes still returned
+\end{itemize}
+
+\subsection*{TC-7: Overcrowded Image}
+\textbf{Input:} Many ingredients in one frame
+\begin{itemize}
+  \item Majority of main ingredients detected
+  \item Low-confidence ingredients filtered or flagged
+\end{itemize}
+
+\subsection*{TC-8: Blurry Image}
+\textbf{Input:} Slightly blurry photo
+\begin{itemize}
+  \item Partial detection
+  \item Graceful degradation
+  \item No nonsensical output
+\end{itemize}
+
+\section{Ingredient Normalization}
+
+\subsection*{TC-9: Synonym Handling}
+\textbf{Input:} ``bell peppers'', ``capsicum''
+\begin{itemize}
+  \item Normalized to a canonical ingredient
+  \item No duplicates
+\end{itemize}
+
+\subsection*{TC-10: Raw vs Prepared Foods}
+\textbf{Input:} ``raw chicken'', ``chicken breast''
+\begin{itemize}
+  \item Normalized to ``chicken breast''
+  \item Clean ingredient list
+\end{itemize}
+
+\subsection*{TC-11: Noise Removal}
+\textbf{Input:} ``plate'', ``bowl'', ``countertop''
+\begin{itemize}
+  \item Non-food items removed
+  \item Final list contains only edible ingredients
+\end{itemize}
+
+\section{User Ingredient Confirmation (UX)}
+
+\subsection*{TC-12: User Removes Ingredient}
+\begin{itemize}
+  \item Ingredient removed from final list
+  \item Recipe results update accordingly
+\end{itemize}
+
+\subsection*{TC-13: User Adds Ingredient}
+\begin{itemize}
+  \item Ingredient included in recipe query
+  \item Results improve or change logically
+\end{itemize}
+
+\subsection*{TC-14: Empty Ingredient List}
+\begin{itemize}
+  \item Friendly message displayed
+  \item Prompt to add at least one ingredient
+\end{itemize}
+
+\section{Recipe Matching (Spoonacular)}
+
+\subsection*{TC-15: Expected Dish Match}
+\textbf{Input:} Steak taco ingredients
+\begin{itemize}
+  \item Taco-style recipes returned
+  \item No irrelevant dishes
+\end{itemize}
+\textbf{Demo Critical}
+
+\subsection*{TC-16: Cultural Dish Edge Case}
+\textbf{Input:} Chicken adobo ingredients
+\begin{itemize}
+  \item Filipino-style or soy/vinegar chicken dish returned
+  \item Reasonable fallback if exact match not found
+\end{itemize}
+
+\subsection*{TC-17: Generic Ingredients}
+\begin{itemize}
+  \item Broad but reasonable recipes
+  \item No extreme or niche results
+\end{itemize}
+
+\subsection*{TC-18: Missing Key Ingredient}
+\begin{itemize}
+  \item Dish still suggested
+  \item Missing ingredients listed clearly
+\end{itemize}
+
+\section{Recipe Ranking Logic}
+
+\subsection*{TC-19: Ranking by Ingredient Match}
+\begin{itemize}
+  \item Recipes with fewer missing ingredients ranked higher
+\end{itemize}
+
+\subsection*{TC-20: Penalize Missing Ingredients}
+\begin{itemize}
+  \item Recipes requiring many extras ranked lower
+\end{itemize}
+
+\subsection*{TC-21: Keyword Boost}
+\begin{itemize}
+  \item Titles matching inferred dish prioritized
+\end{itemize}
+
+\section{Performance \& Reliability}
+
+\subsection*{TC-22: End-to-End Time}
+\begin{itemize}
+  \item Full flow completes in under 10 seconds
+\end{itemize}
+\textbf{Demo Critical}
+
+\subsection*{TC-23: Spoonacular API Failure}
+\begin{itemize}
+  \item Graceful error message
+  \item No application crash
+\end{itemize}
+
+\subsection*{TC-24: Vision API Failure}
+\begin{itemize}
+  \item Friendly fallback message
+  \item Retry suggested
+\end{itemize}
+
+\section{UX \& Demo Polish}
+
+\subsection*{TC-25: Loading States}
+\begin{itemize}
+  \item Visible loading indicators
+  \item No frozen UI
+\end{itemize}
+
+\subsection*{TC-26: Mobile Responsiveness}
+\begin{itemize}
+  \item Image upload usable on mobile
+  \item Recipe cards readable
+\end{itemize}
+
+\subsection*{TC-27: First-Time User Flow}
+\begin{itemize}
+  \item Clear next steps
+  \item No verbal instructions needed
+\end{itemize}
+\textbf{Demo Critical}
+
+\section{Final Demo Readiness Checklist}
+
+Before demo day, confirm:
+\begin{itemize}
+  \item 5--10 ``golden'' test images consistently work
+  \item No console errors
+  \item API keys secured
+  \item App recovers gracefully from failures
+  \item Demo flow rehearsed end-to-end
+\end{itemize}
+
+\section*{Pro Tip}
+
+Create a demo script:
+\begin{enumerate}
+  \item Upload steak taco image
+  \item Show detected ingredients
+  \item Confirm ingredients
+  \item Highlight ranked recipe
+  \item Open recipe details
+\end{enumerate}
+
+If this flow works every time, the demo will land.
+
+\end{document}
