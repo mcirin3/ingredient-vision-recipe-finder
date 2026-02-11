@@ -1,22 +1,38 @@
 'use client';
 
 import React, { useState } from 'react';
-import { MdFace, MdOutlineClose } from 'react-icons/md';
+import { MdFace } from 'react-icons/md';
 import RecipeCard from './RecipeCard';
 import RecipeDetail from './RecipeDetail';
-import { Recipe } from '@/types/recipe';
+import { RankedRecipe } from '@/types/recipe';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { MESSAGES } from '@/lib/constants';
+import { getRecipeDetails } from '@/lib/api';
 
 interface RecipeListProps {
-  recipes: Recipe[];
+  recipes: RankedRecipe[];
   userIngredients: string[];
   onStartOver: () => void;
 }
 
 export default function RecipeList({ recipes, userIngredients, onStartOver }: RecipeListProps) {
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [selectedRecipe, setSelectedRecipe] = useState<RankedRecipe | null>(null);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+
+  const handleSelect = async (recipe: RankedRecipe) => {
+    setSelectedRecipe(recipe);
+    if (!recipe.id) return;
+    setIsDetailLoading(true);
+    try {
+      const detail = await getRecipeDetails(recipe.id);
+      setSelectedRecipe({ ...recipe, ...detail });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsDetailLoading(false);
+    }
+  };
 
   if (recipes.length === 0) {
     return (
@@ -68,7 +84,7 @@ export default function RecipeList({ recipes, userIngredients, onStartOver }: Re
           <RecipeCard
             key={recipe.id}
             recipe={recipe}
-            onClick={() => setSelectedRecipe(recipe)}
+            onClick={() => handleSelect(recipe)}
           />
         ))}
       </div>
@@ -83,6 +99,7 @@ export default function RecipeList({ recipes, userIngredients, onStartOver }: Re
             recipe={selectedRecipe}
             userIngredients={userIngredients}
             onClose={() => setSelectedRecipe(null)}
+            loading={isDetailLoading}
           />
         )}
       </Modal>

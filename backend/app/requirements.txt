@@ -4,3 +4,6 @@ python-multipart
 requests
 python-dotenv
 boto3
+openai
+pydantic
+pydantic-settings

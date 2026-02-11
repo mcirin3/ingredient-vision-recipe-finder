@@ -6,8 +6,8 @@ import { FiLoader } from 'react-icons/fi';
 import ImageUploader from '@/components/upload/ImageUploader';
 import IngredientPreview from '@/components/upload/IngredientPreview';
 import RecipeList from '@/components/recipes/RecipeList';
-import { uploadImage, searchRecipesByIngredients } from '@/lib/api';
-import { Recipe } from '@/types/recipe';
+import { uploadImage, analyzeImage, searchRecipesByIngredients } from '@/lib/api';
+import { RankedRecipe } from '@/types/recipe';
 import { MESSAGES, MAX_RECIPES } from '@/lib/constants';
 
 type AppState = 'upload' | 'processing' | 'ingredients' | 'recipes' | 'error';
@@ -18,7 +18,7 @@ export default function Home() {
   const [imageUrl, setImageUrl] = useState<string>('');
   const [imageId, setImageId] = useState<string>('');
   const [detectedIngredients, setDetectedIngredients] = useState<string[]>([]);
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [recipes, setRecipes] = useState<RankedRecipe[]>([]);
   const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
   const [error, setError] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -39,7 +39,9 @@ export default function Home() {
       try {
         const result = await uploadImage(file);
         setImageId(result.image_id);
-        setDetectedIngredients([]);
+
+        const analysis = await analyzeImage(result.image_id);
+        setDetectedIngredients(analysis.ingredients_normalized ?? []);
         setState('ingredients');
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : MESSAGES.PROCESSING_ERROR;

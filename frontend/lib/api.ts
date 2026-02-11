@@ -1,6 +1,6 @@
 import { API_BASE_URL } from './constants';
-import { Recipe } from '@/types/recipe';
-import { DetectedIngredient } from '@/types/ingredient';
+import { RankedRecipe } from '@/types/recipe';
+import { AnalyzeResponse } from '@/types/api';
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -9,8 +9,10 @@ export class ApiError extends Error {
   }
 }
 
-// Image Upload API
-export async function uploadImage(file: File): Promise<{ image_id: string; status: string; url?: string }> {
+// Image Upload API (direct upload fallback)
+export async function uploadImage(
+  file: File
+): Promise<{ image_id: string; status: string; url?: string }> {
   const formData = new FormData();
   formData.append('image', file);
 
@@ -26,38 +28,50 @@ export async function uploadImage(file: File): Promise<{ image_id: string; statu
   return response.json();
 }
 
+// Vision + normalization
+export async function analyzeImage(s3Key: string): Promise<AnalyzeResponse> {
+  const response = await fetch(`${API_BASE_URL}/analyze`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ s3_key: s3Key }),
+  });
+
+  if (!response.ok) {
+    throw new ApiError(response.status, 'Failed to analyze image');
+  }
+
+  return response.json();
+}
+
 // Recipe API
 export async function searchRecipesByIngredients(
   ingredients: string[]
-): Promise<Recipe[]> {
-  const params = new URLSearchParams({
-    ingredients: ingredients.join(','),
+): Promise<RankedRecipe[]> {
+  const response = await fetch(`${API_BASE_URL}/recipes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ingredients }),
   });
-
-  const response = await fetch(
-    `${API_BASE_URL}/api/recipes/by-ingredients?${params.toString()}`
-  );
 
   if (!response.ok) {
     throw new ApiError(response.status, 'Failed to search recipes');
   }
 
-  return response.json();
+  const data = await response.json();
+  return data.recipes ?? [];
 }
 
-export async function getRecipeDetails(recipeId: number): Promise<Recipe> {
-  const response = await fetch(`${API_BASE_URL}/api/recipes/${recipeId}`);
-
+export async function getRecipeDetails(recipeId: number): Promise<Partial<RankedRecipe>> {
+  const response = await fetch(`${API_BASE_URL}/recipes/${recipeId}`);
   if (!response.ok) {
     throw new ApiError(response.status, 'Failed to get recipe details');
   }
-
   return response.json();
 }
 
 // Health check
 export async function checkHealth(): Promise<{ status: string }> {
-  const response = await fetch(`${API_BASE_URL}/api/health`);
+  const response = await fetch(`${API_BASE_URL}/health`);
 
   if (!response.ok) {
     throw new ApiError(response.status, 'Health check failed');

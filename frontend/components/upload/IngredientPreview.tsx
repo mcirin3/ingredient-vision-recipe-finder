@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { MdClose } from 'react-icons/md';
 import { Button } from '@/components/ui/Button';
@@ -25,6 +25,10 @@ export default function IngredientPreview({
 }: IngredientPreviewProps) {
   const [ingredients, setIngredients] = useState<string[]>(detectedIngredients);
   const [newIngredient, setNewIngredient] = useState('');
+
+  useEffect(() => {
+    setIngredients(detectedIngredients);
+  }, [detectedIngredients]);
 
   const handleRemoveIngredient = (index: number) => {
     setIngredients(ingredients.filter((_, i) => i !== index));
@@ -58,7 +62,7 @@ export default function IngredientPreview({
         </h2>
         <p className="text-gray-600">
           {isProcessing
-            ? 'Uploading your image...'
+            ? 'Detecting ingredients...'
             : 'Review and edit the ingredients before finding recipes'}
         </p>
         {!isProcessing && imageId && (

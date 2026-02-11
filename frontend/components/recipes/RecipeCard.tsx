@@ -1,18 +1,19 @@
 import React from 'react';
 import Image from 'next/image';
-import { FiCheck, FiAlertTriangle, FiClock } from 'react-icons/fi';
+import { FiCheck, FiAlertTriangle } from 'react-icons/fi';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Recipe } from '@/types/recipe';
+import { RankedRecipe } from '@/types/recipe';
 
 interface RecipeCardProps {
-  recipe: Recipe;
+  recipe: RankedRecipe;
   onClick: () => void;
 }
 
 export default function RecipeCard({ recipe, onClick }: RecipeCardProps) {
-  const matchPercentage = Math.round(
-    (recipe.usedIngredientCount / (recipe.usedIngredientCount + recipe.missedIngredientCount)) * 100
-  );
+  const matched = recipe.matched?.length ?? 0;
+  const missing = recipe.missing?.length ?? 0;
+  const denominator = matched + missing || 1;
+  const matchPercentage = Math.round((matched / denominator) * 100);
 
   return (
     <Card hover onClick={onClick} className="h-full">
@@ -20,7 +21,7 @@ export default function RecipeCard({ recipe, onClick }: RecipeCardProps) {
         {recipe.image ? (
           <Image
             src={recipe.image}
-            alt={recipe.title}
+            alt={recipe.title || 'Recipe image'}
             fill
             className="object-cover"
           />
@@ -55,22 +56,15 @@ export default function RecipeCard({ recipe, onClick }: RecipeCardProps) {
           <div className="flex items-center gap-4 text-sm text-gray-600">
             <div className="flex items-center gap-1">
               <FiCheck className="w-4 h-4 text-green-600" />
-              <span>{recipe.usedIngredientCount} matched</span>
+              <span>{matched} matched</span>
             </div>
-            {recipe.missedIngredientCount > 0 && (
+            {missing > 0 && (
               <div className="flex items-center gap-1">
                 <FiAlertTriangle className="w-4 h-4 text-orange-600" />
-                <span>{recipe.missedIngredientCount} missing</span>
+                <span>{missing} missing</span>
               </div>
             )}
           </div>
-
-          {recipe.readyInMinutes && (
-            <div className="flex items-center gap-1 text-sm text-gray-600">
-              <FiClock className="w-4 h-4" />
-              <span>{recipe.readyInMinutes} minutes</span>
-            </div>
-          )}
         </div>
       </CardContent>
     </Card>

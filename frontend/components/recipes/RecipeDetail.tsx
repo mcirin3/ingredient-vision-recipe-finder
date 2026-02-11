@@ -1,21 +1,19 @@
 import React from 'react';
 import Image from 'next/image';
-import { FiClock, FiUsers, FiExternalLink, FiCheck, FiAlertTriangle } from 'react-icons/fi';
-import { Recipe } from '@/types/recipe';
+import { FiCheck, FiAlertTriangle, FiExternalLink } from 'react-icons/fi';
+import { RankedRecipe } from '@/types/recipe';
 import { Button } from '@/components/ui/Button';
 
 interface RecipeDetailProps {
-  recipe: Recipe;
+  recipe: RankedRecipe;
   userIngredients: string[];
   onClose: () => void;
+  loading?: boolean;
 }
 
-export default function RecipeDetail({ recipe, userIngredients, onClose }: RecipeDetailProps) {
-  const allIngredients = [
-    ...recipe.usedIngredients.map((ing) => ({ ...ing, matched: true })),
-    ...recipe.missedIngredients.map((ing) => ({ ...ing, matched: false })),
-  ];
-
+export default function RecipeDetail({ recipe, userIngredients, onClose, loading }: RecipeDetailProps) {
+  const matched = recipe.matched || [];
+  const missing = recipe.missing || [];
   const steps = recipe.analyzedInstructions?.[0]?.steps || [];
 
   return (
@@ -23,18 +21,11 @@ export default function RecipeDetail({ recipe, userIngredients, onClose }: Recip
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">{recipe.title}</h1>
-        {recipe.readyInMinutes && (
-          <div className="flex items-center gap-4 text-sm text-gray-600">
-            <div className="flex items-center gap-1">
-              <FiClock className="w-4 h-4" />
-              <span>{recipe.readyInMinutes} minutes</span>
-            </div>
-            {recipe.servings && (
-              <div className="flex items-center gap-1">
-                <FiUsers className="w-4 h-4" />
-                <span>{recipe.servings} servings</span>
-              </div>
-            )}
+        <p className="text-gray-600">Source: {recipe.source}</p>
+        {(recipe.readyInMinutes || recipe.servings) && (
+          <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+            {recipe.readyInMinutes ? <span>{recipe.readyInMinutes} minutes</span> : null}
+            {recipe.servings ? <span>{recipe.servings} servings</span> : null}
           </div>
         )}
       </div>
@@ -44,7 +35,7 @@ export default function RecipeDetail({ recipe, userIngredients, onClose }: Recip
         <div className="relative w-full h-64 rounded-lg overflow-hidden bg-gray-100">
           <Image
             src={recipe.image}
-            alt={recipe.title}
+            alt={recipe.title || 'Recipe image'}
             fill
             className="object-cover"
           />
@@ -54,35 +45,48 @@ export default function RecipeDetail({ recipe, userIngredients, onClose }: Recip
       {/* Ingredients */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Ingredients</h2>
-        <div className="space-y-2">
-          {allIngredients.map((ingredient, index) => (
-            <div
-              key={index}
-              className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50"
-            >
-              {ingredient.matched ? (
-                <FiCheck className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-              ) : (
-                <FiAlertTriangle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
-              )}
-              <div className="flex-1">
-                <span className={ingredient.matched ? 'text-gray-900' : 'text-orange-800 font-medium'}>
-                  {ingredient.name}
-                  {ingredient.amount && ` - ${ingredient.amount}`}
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-2">Matched</h3>
+            {matched.length === 0 && <p className="text-sm text-gray-600">None</p>}
+            <div className="flex flex-wrap gap-2">
+              {matched.map((ing, idx) => (
+                <span
+                  key={idx}
+                  className="flex items-center gap-1 bg-green-100 text-green-800 px-3 py-1.5 rounded-full text-sm"
+                >
+                  <FiCheck className="w-4 h-4" />
+                  {ing}
                 </span>
-                {!ingredient.matched && (
-                  <span className="text-xs text-orange-600 ml-2">(missing)</span>
-                )}
-              </div>
+              ))}
             </div>
-          ))}
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-2">Missing</h3>
+            {missing.length === 0 && <p className="text-sm text-gray-600">None</p>}
+            <div className="flex flex-wrap gap-2">
+              {missing.map((ing, idx) => (
+                <span
+                  key={idx}
+                  className="flex items-center gap-1 bg-orange-100 text-orange-800 px-3 py-1.5 rounded-full text-sm"
+                >
+                  <FiAlertTriangle className="w-4 h-4" />
+                  {ing}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Instructions */}
-      {steps.length > 0 && (
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Instructions</h2>
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Instructions</h2>
+        {loading && (
+          <p className="text-sm text-gray-600">Loading instructions...</p>
+        )}
+        {!loading && steps.length > 0 && (
           <div className="space-y-4">
             {steps.map((step) => (
               <div key={step.number} className="flex gap-4">
@@ -93,19 +97,17 @@ export default function RecipeDetail({ recipe, userIngredients, onClose }: Recip
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Instructions as HTML if no steps */}
-      {steps.length === 0 && recipe.instructions && (
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Instructions</h2>
+        )}
+        {!loading && steps.length === 0 && recipe.instructions && (
           <div
             className="prose max-w-none text-gray-700"
             dangerouslySetInnerHTML={{ __html: recipe.instructions }}
           />
-        </div>
-      )}
+        )}
+        {!loading && !steps.length && !recipe.instructions && (
+          <p className="text-sm text-gray-600">Instructions not available.</p>
+        )}
+      </div>
 
       {/* Source Link */}
       {recipe.sourceUrl && (
