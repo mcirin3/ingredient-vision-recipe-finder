@@ -102,7 +102,7 @@ export default function ImageUploader({ onImageSelect, onError }: ImageUploaderP
       </div>
 
       <div className="text-xs text-gray-500 text-center max-w-md px-4">
-        Supported formats: JPEG, PNG, WebP • Max size: {MAX_FILE_SIZE / 1024 / 1024}MB
+        Supported formats: JPEG, PNG | Max size: {MAX_FILE_SIZE / 1024 / 1024}MB
       </div>
     </div>
   );

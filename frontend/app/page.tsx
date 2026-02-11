@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { MdOutlineClose, MdError, MdCheckCircle } from 'react-icons/md';
+import { MdOutlineClose, MdError } from 'react-icons/md';
 import { FiLoader } from 'react-icons/fi';
 import ImageUploader from '@/components/upload/ImageUploader';
 import IngredientPreview from '@/components/upload/IngredientPreview';
@@ -16,6 +16,7 @@ export default function Home() {
   const [state, setState] = useState<AppState>('upload');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string>('');
+  const [imageId, setImageId] = useState<string>('');
   const [detectedIngredients, setDetectedIngredients] = useState<string[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
@@ -37,7 +38,8 @@ export default function Home() {
 
       try {
         const result = await uploadImage(file);
-        setDetectedIngredients(result.ingredients);
+        setImageId(result.image_id);
+        setDetectedIngredients([]);
         setState('ingredients');
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : MESSAGES.PROCESSING_ERROR;
@@ -73,6 +75,7 @@ export default function Home() {
   const handleRetake = useCallback(() => {
     setImageFile(null);
     setImageUrl('');
+    setImageId('');
     setDetectedIngredients([]);
     setState('upload');
     setError('');
@@ -81,6 +84,7 @@ export default function Home() {
   const handleStartOver = useCallback(() => {
     setImageFile(null);
     setImageUrl('');
+    setImageId('');
     setDetectedIngredients([]);
     setRecipes([]);
     setSelectedIngredients([]);
@@ -148,6 +152,7 @@ export default function Home() {
             imageUrl={imageUrl}
             detectedIngredients={detectedIngredients}
             isProcessing={state === 'processing'}
+            imageId={imageId}
             onConfirm={handleConfirmIngredients}
             onRetake={handleRetake}
           />
@@ -186,4 +191,3 @@ export default function Home() {
     </div>
   );
 }
-

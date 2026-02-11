@@ -13,3 +13,4 @@ __pycache__/
 
 # Build
 dist/
+backend/app/uploads/

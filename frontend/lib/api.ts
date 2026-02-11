@@ -9,18 +9,18 @@ export class ApiError extends Error {
   }
 }
 
-// Vision API
-export async function uploadImage(file: File): Promise<{ ingredients: string[] }> {
+// Image Upload API
+export async function uploadImage(file: File): Promise<{ image_id: string; status: string; url?: string }> {
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append('image', file);
 
-  const response = await fetch(`${API_BASE_URL}/api/vision/detect`, {
+  const response = await fetch(`${API_BASE_URL}/upload-image`, {
     method: 'POST',
     body: formData,
   });
 
   if (!response.ok) {
-    throw new ApiError(response.status, 'Failed to detect ingredients from image');
+    throw new ApiError(response.status, 'Failed to upload image');
   }
 
   return response.json();

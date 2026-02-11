@@ -10,6 +10,7 @@ interface IngredientPreviewProps {
   imageUrl: string;
   detectedIngredients: string[];
   isProcessing: boolean;
+  imageId?: string;
   onConfirm: (ingredients: string[]) => void;
   onRetake: () => void;
 }
@@ -18,6 +19,7 @@ export default function IngredientPreview({
   imageUrl,
   detectedIngredients,
   isProcessing,
+  imageId,
   onConfirm,
   onRetake,
 }: IngredientPreviewProps) {
@@ -52,13 +54,18 @@ export default function IngredientPreview({
     <div className="w-full max-w-4xl mx-auto px-4 space-y-6">
       <div className="text-center">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">
-          {isProcessing ? 'Analyzing Your Ingredients...' : 'Confirm Ingredients'}
+          {isProcessing ? 'Processing Your Image...' : 'Confirm Ingredients'}
         </h2>
         <p className="text-gray-600">
           {isProcessing
-            ? 'This may take 5-10 seconds...'
-            : 'Review and edit the detected ingredients before finding recipes'}
+            ? 'Uploading your image...'
+            : 'Review and edit the ingredients before finding recipes'}
         </p>
+        {!isProcessing && imageId && (
+          <p className="text-sm text-gray-500 mt-1">
+            Upload complete. Image ID: <span className="font-mono">{imageId}</span>
+          </p>
+        )}
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
