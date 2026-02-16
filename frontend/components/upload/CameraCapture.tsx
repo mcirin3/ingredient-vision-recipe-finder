@@ -41,6 +41,8 @@ export function CameraCapture({ onCapture, onCancel, onError }: CameraCapturePro
   }, [stream]);
 
   useEffect(() => {
+    // We intentionally start the camera on mount; state updates inside startCamera are expected here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     startCamera();
 
     return () => {
