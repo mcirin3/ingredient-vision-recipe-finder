@@ -1,6 +1,14 @@
 # backend/tests/conftest.py
+import sys
+from pathlib import Path
 import io, pytest
 from fastapi.testclient import TestClient
+
+# Ensure the backend/app module is on sys.path when tests are run from repo root or backend/.
+ROOT = Path(__file__).resolve().parents[1]  # backend/
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 import app.main as main
 
 @pytest.fixture(autouse=True)
@@ -11,10 +19,18 @@ def stub_s3(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def stub_openai(monkeypatch):
-    # avoid live OpenAI calls
+    """Stub vision + normalization to avoid real OpenAI calls."""
     from app.services import vision_service, normalization_service
-    monkeypatch.setattr(vision_service, "extract_labels_from_image", lambda key: ["steak", "tortilla", "onion"])
-    monkeypatch.setattr(normalization_service, "normalize_labels", lambda labels: [l.lower() for l in labels if l != "plate"])
+    from app.api import vision as vision_api
+
+    fake_labels = lambda key: ["steak", "tortilla", "onion"]
+    fake_norm = lambda labels: [l.lower() for l in labels if l != "plate"]
+
+    monkeypatch.setattr(vision_service, "extract_labels_from_image", fake_labels)
+    monkeypatch.setattr(normalization_service, "normalize_labels", fake_norm)
+    # Also patch the symbols imported into the FastAPI route module
+    monkeypatch.setattr(vision_api, "extract_labels_from_image", fake_labels)
+    monkeypatch.setattr(vision_api, "normalize_labels", fake_norm)
 
 @pytest.fixture(autouse=True)
 def stub_spoonacular(monkeypatch):
