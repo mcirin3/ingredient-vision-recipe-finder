@@ -1,5 +1,5 @@
 # backend/tests/conftest.py
-import sys
+import os, sys
 from pathlib import Path
 import io, pytest
 from fastapi.testclient import TestClient
@@ -8,6 +8,17 @@ from fastapi.testclient import TestClient
 ROOT = Path(__file__).resolve().parents[1]  # backend/
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+# Provide dummy env vars so Settings() in app.core.config loads without real secrets.
+ENV_DEFAULTS = {
+    "aws_access_key_id": "test",
+    "aws_secret_access_key": "test",
+    "aws_region": "us-east-1",
+    "aws_s3_bucket": "test-bucket",
+    "openai_api_key": "test",
+}
+for k, v in ENV_DEFAULTS.items():
+    os.environ.setdefault(k, v)
 
 import app.main as main
 
