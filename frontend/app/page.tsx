@@ -14,14 +14,12 @@ type AppState = 'upload' | 'processing' | 'ingredients' | 'recipes' | 'error';
 
 export default function Home() {
   const [state, setState] = useState<AppState>('upload');
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string>('');
   const [imageId, setImageId] = useState<string>('');
   const [detectedIngredients, setDetectedIngredients] = useState<string[]>([]);
   const [recipes, setRecipes] = useState<RankedRecipe[]>([]);
   const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
   const [error, setError] = useState<string>('');
-  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleError = useCallback((errorMessage: string) => {
     setError(errorMessage);
@@ -30,11 +28,9 @@ export default function Home() {
 
   const handleImageSelect = useCallback(
     async (file: File) => {
-      setImageFile(file);
       setImageUrl(URL.createObjectURL(file));
       setState('processing');
       setError('');
-      setIsProcessing(true);
 
       try {
         const result = await uploadImage(file);
@@ -46,8 +42,6 @@ export default function Home() {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : MESSAGES.PROCESSING_ERROR;
         handleError(errorMessage);
-      } finally {
-        setIsProcessing(false);
       }
     },
     [handleError]
@@ -57,7 +51,6 @@ export default function Home() {
     async (ingredients: string[]) => {
       setSelectedIngredients(ingredients);
       setState('processing');
-      setIsProcessing(true);
 
       try {
         const searchResults = await searchRecipesByIngredients(ingredients);
@@ -67,15 +60,12 @@ export default function Home() {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : MESSAGES.PROCESSING_ERROR;
         handleError(errorMessage);
-      } finally {
-        setIsProcessing(false);
       }
     },
     [handleError]
   );
 
   const handleRetake = useCallback(() => {
-    setImageFile(null);
     setImageUrl('');
     setImageId('');
     setDetectedIngredients([]);
@@ -84,7 +74,6 @@ export default function Home() {
   }, []);
 
   const handleStartOver = useCallback(() => {
-    setImageFile(null);
     setImageUrl('');
     setImageId('');
     setDetectedIngredients([]);

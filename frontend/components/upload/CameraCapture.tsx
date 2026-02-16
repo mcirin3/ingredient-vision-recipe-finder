@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { FiCamera } from 'react-icons/fi';
 import { Button } from '@/components/ui/Button';
 
@@ -16,15 +16,7 @@ export function CameraCapture({ onCapture, onCancel, onError }: CameraCapturePro
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
 
-  useEffect(() => {
-    startCamera();
-
-    return () => {
-      stopCamera();
-    };
-  }, []);
-
-  const startCamera = async () => {
+  const startCamera = useCallback(async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' }, // Use back camera on mobile
@@ -36,17 +28,25 @@ export function CameraCapture({ onCapture, onCancel, onError }: CameraCapturePro
         setStream(mediaStream);
         setIsCameraReady(true);
       }
-    } catch (error) {
+    } catch {
       onError('Unable to access camera. Please check permissions.');
       onCancel();
     }
-  };
+  }, [onCancel, onError]);
 
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     if (stream) {
       stream.getTracks().forEach((track) => track.stop());
     }
-  };
+  }, [stream]);
+
+  useEffect(() => {
+    startCamera();
+
+    return () => {
+      stopCamera();
+    };
+  }, [startCamera, stopCamera]);
 
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) return;

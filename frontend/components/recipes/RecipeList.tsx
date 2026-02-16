@@ -97,7 +97,6 @@ export default function RecipeList({ recipes, userIngredients, onStartOver }: Re
         {selectedRecipe && (
           <RecipeDetail
             recipe={selectedRecipe}
-            userIngredients={userIngredients}
             onClose={() => setSelectedRecipe(null)}
             loading={isDetailLoading}
           />

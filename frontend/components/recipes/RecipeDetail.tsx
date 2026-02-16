@@ -6,12 +6,11 @@ import { Button } from '@/components/ui/Button';
 
 interface RecipeDetailProps {
   recipe: RankedRecipe;
-  userIngredients: string[];
   onClose: () => void;
   loading?: boolean;
 }
 
-export default function RecipeDetail({ recipe, userIngredients, onClose, loading }: RecipeDetailProps) {
+export default function RecipeDetail({ recipe, onClose, loading }: RecipeDetailProps) {
   const matched = recipe.matched || [];
   const missing = recipe.missing || [];
   const steps = recipe.analyzedInstructions?.[0]?.steps || [];
