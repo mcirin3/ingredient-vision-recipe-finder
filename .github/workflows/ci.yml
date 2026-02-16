@@ -7,50 +7,34 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
+    defaults: { run: { working-directory: backend/app } }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-      - run: pip install -r app/requirements.txt pytest
-      - run: PYTHONPATH=app pytest tests -q
+        with: { python-version: '3.11', cache: 'pip' }
+      - run: pip install -r requirements.txt pytest pytest-asyncio httpx respx
+      - run: pytest -q
 
   frontend:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
+    defaults: { run: { working-directory: frontend } }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Install deps (lockfile optional)
-        run: |
-          if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
-            npm ci
-          else
-            npm install --no-fund --no-audit
-          fi
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
       - run: npm run lint
       - run: npx playwright install --with-deps
       - name: Start dev server
         run: npm run dev -- --hostname 0.0.0.0 --port 3000 &
       - name: Wait for server
         run: npx wait-on http://localhost:3000
-      # move your Playwright spec to frontend/tests/ (recommended); otherwise point directly:
       - run: npx playwright test
 
+#   # optional combined e2e hitting deployed staging
 #   smoke:
-#     if: env.STAGING_HEALTH_URL != ''
+#     if: github.ref == 'refs/heads/main'
 #     runs-on: ubuntu-latest
 #     steps:
 #       - uses: actions/checkout@v4
-#       - name: Smoke check
-#         env:
-#           URL: ${{ env.STAGING_HEALTH_URL }}
-#         run: curl -f "$URL"
+#       - run: curl -f https://staging.yourdomain/health
