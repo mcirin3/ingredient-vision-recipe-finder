@@ -34,6 +34,8 @@ jobs:
       - run: npm run lint
       - run: npx playwright install --with-deps
       - name: Start dev server
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:3000
         run: npm run dev -- --hostname 0.0.0.0 --port 3000 &
       - name: Wait for server
         run: npx wait-on http://localhost:3000

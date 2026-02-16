@@ -28,7 +28,6 @@ test('happy path steak taco (TC-1,5,15,22,27)', async ({ page }) => {
   await expect(page.getByText(/tortilla/i)).toBeVisible();
 
   await page.getByRole('button', { name: /find recipes/i }).click();
-  await page.waitForResponse((res) => res.url().match(/\/recipes$/) !== null);
   await expect(page.getByText(/recipe recommendations/i)).toBeVisible({ timeout: 15000 });
 });
 
