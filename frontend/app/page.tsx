@@ -8,7 +8,7 @@ import IngredientPreview from '@/components/upload/IngredientPreview';
 import RecipeList from '@/components/recipes/RecipeList';
 import { uploadImage, analyzeImage, searchRecipesByIngredients } from '@/lib/api';
 import { RankedRecipe } from '@/types/recipe';
-import { MESSAGES, MAX_RECIPES } from '@/lib/constants';
+import { MESSAGES } from '@/lib/constants';
 
 type AppState = 'upload' | 'processing' | 'ingredients' | 'recipes' | 'error';
 
@@ -19,6 +19,7 @@ export default function Home() {
   const [detectedIngredients, setDetectedIngredients] = useState<string[]>([]);
   const [recipes, setRecipes] = useState<RankedRecipe[]>([]);
   const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
+  const [selectedCuisine, setSelectedCuisine] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string>('');
 
   const handleError = useCallback((errorMessage: string) => {
@@ -48,14 +49,14 @@ export default function Home() {
   );
 
   const handleConfirmIngredients = useCallback(
-    async (ingredients: string[]) => {
+    async (ingredients: string[], cuisine?: string) => {
       setSelectedIngredients(ingredients);
+      setSelectedCuisine(cuisine);
       setState('processing');
 
       try {
-        const searchResults = await searchRecipesByIngredients(ingredients);
-        const limitedRecipes = searchResults.slice(0, MAX_RECIPES);
-        setRecipes(limitedRecipes);
+        const searchResults = await searchRecipesByIngredients(ingredients, cuisine || undefined);
+        setRecipes(searchResults);
         setState('recipes');
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : MESSAGES.PROCESSING_ERROR;
@@ -146,6 +147,8 @@ export default function Home() {
             imageId={imageId}
             onConfirm={handleConfirmIngredients}
             onRetake={handleRetake}
+            selectedCuisine={selectedCuisine}
+            onCuisineChange={setSelectedCuisine}
           />
         )}
 

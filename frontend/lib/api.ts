@@ -45,12 +45,13 @@ export async function analyzeImage(s3Key: string): Promise<AnalyzeResponse> {
 
 // Recipe API
 export async function searchRecipesByIngredients(
-  ingredients: string[]
+  ingredients: string[],
+  cuisine?: string
 ): Promise<RankedRecipe[]> {
   const response = await fetch(`${API_BASE_URL}/recipes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ingredients }),
+    body: JSON.stringify({ ingredients, cuisine }),
   });
 
   if (!response.ok) {

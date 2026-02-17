@@ -12,6 +12,7 @@ router = APIRouter(prefix="/recipes", tags=["recipes"])
 
 class RecipesRequest(BaseModel):
     ingredients: list[str]
+    cuisine: str | None = None
 
 
 class RecipeOut(BaseModel):
@@ -33,7 +34,7 @@ async def get_recipes(payload: RecipesRequest):
     if not payload.ingredients:
         raise HTTPException(status_code=400, detail="ingredients required")
 
-    candidates = fetch_candidates(payload.ingredients)
+    candidates = fetch_candidates(payload.ingredients, cuisine=payload.cuisine)
     ranked = score_and_rank(payload.ingredients, candidates)
     return RecipesResponse(recipes=ranked)
 

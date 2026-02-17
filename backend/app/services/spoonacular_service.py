@@ -6,16 +6,46 @@ from ..core.config import settings
 SPOONACULAR_SEARCH = "https://api.spoonacular.com/recipes/complexSearch"
 SPOONACULAR_INFORMATION = "https://api.spoonacular.com/recipes/{recipe_id}/information"
 
+# Minimal synonym/alias map to make overlap scoring more robust to wording differences.
+CANONICAL_MAP: dict[str, set[str]] = {
+    "bell pepper": {"capsicum", "bell peppers"},
+    "cilantro": {"coriander", "coriander leaves"},
+    "scallion": {"green onion", "spring onion"},
+    "tortilla": {"tortillas", "flour tortilla", "corn tortilla"},
+    "cheese": {"cheddar", "mozzarella", "queso"},
+    "beef": {"steak", "sirloin", "flank", "skirt", "ribeye", "beefsteak", "carne"},
+    "lime": {"limes"},
+}
+
 
 def _infer_dish_intent(ingredients: list[str]) -> str:
     """
     Prefer a concrete dish hint:
-    - If tortilla present with a protein → "taco"
+    - If tortilla present with a protein -> "taco"
     - Else protein + second ingredient token (e.g., "steak onion")
     - Else join first two ingredients.
     """
     lower = [i.lower() for i in ingredients]
-    proteins = [i for i in lower if any(p in i for p in ["chicken", "beef", "pork", "steak", "shrimp", "salmon", "tofu", "egg", "turkey"])]
+    proteins = [
+        i
+        for i in lower
+        if any(
+            p in i
+            for p in [
+                "chicken",
+                "beef",
+                "pork",
+                "steak",
+                "shrimp",
+                "salmon",
+                "tofu",
+                "egg",
+                "turkey",
+                "chorizo",
+                "fish",
+            ]
+        )
+    ]
     has_tortilla = any("tortilla" in i for i in lower)
     if proteins and has_tortilla:
         return "taco"
@@ -24,7 +54,7 @@ def _infer_dish_intent(ingredients: list[str]) -> str:
     return " ".join(lower[:2]) if lower else ""
 
 
-def fetch_candidates(ingredients: list[str], limit: int = 15) -> list[dict]:
+def fetch_candidates(ingredients: list[str], limit: int = 50, cuisine: str | None = None) -> list[dict]:
     """Fetch candidate recipes using complexSearch, biased to maximize ingredient overlap."""
     if not settings.spoonacular_api_key:
         return []
@@ -32,11 +62,14 @@ def fetch_candidates(ingredients: list[str], limit: int = 15) -> list[dict]:
     intent = _infer_dish_intent(ingredients)
     lower = [i.lower() for i in ingredients]
     has_tortilla = any("tortilla" in i for i in lower)
-    cuisines = "mexican" if has_tortilla else None
+    has_steak = any("steak" in i or "beef" in i for i in lower)
+
+    # Force a taco-focused query when tortilla + steak/beef are present to avoid drifting results.
+    query = "steak taco" if (has_tortilla and has_steak) else intent
 
     params = {
         "apiKey": settings.spoonacular_api_key,
-        "query": intent,
+        "query": query,
         # spoonacular treats includeIngredients as a soft filter; keep it, but rely on ranking below.
         "includeIngredients": ",".join(ingredients),
         "number": limit,
@@ -48,8 +81,8 @@ def fetch_candidates(ingredients: list[str], limit: int = 15) -> list[dict]:
         "ranking": 2,  # prefer recipes that use more of the given ingredients
         "type": "main course",
     }
-    if cuisines:
-        params["cuisine"] = cuisines
+    if cuisine:
+        params["cuisine"] = cuisine
     r = requests.get(SPOONACULAR_SEARCH, params=params, timeout=10)
     if r.status_code != 200:
         raise HTTPException(status_code=502, detail="Spoonacular error")
@@ -80,22 +113,27 @@ def fetch_recipe_details(recipe_id: int) -> dict:
     }
 
 
-def score_and_rank(user_ings: list[str], candidates: list[dict], top_k: int = 5) -> list[dict]:
-    """Score recipes using ingredient overlap plus intent match; filter out zero-match results."""
-    # Normalize user ingredients to tokens for partial matching (e.g., "flour tortillas" -> "tortilla").
+def score_and_rank(user_ings: list[str], candidates: list[dict]) -> list[dict]:
+    """
+    Filter to reasonable matches (>=50% overlap with user ingredients) and sort by match quality.
+    """
+    def canonicalize(token: str) -> str:
+        token = token.rstrip("s")
+        for canonical, variants in CANONICAL_MAP.items():
+            if token == canonical or token in variants:
+                return canonical
+        return token
+
     def normalize_tokens(items: list[str]) -> set[str]:
         tokens: set[str] = set()
         for raw in items:
-            for token in raw.lower().replace("-", " ").split():
-                if token:
-                    tokens.add(token.rstrip("s"))  # crude singularize
+            for tok in raw.lower().replace("-", " ").split():
+                if tok:
+                    tokens.add(canonicalize(tok))
         return tokens
 
     user_tokens = normalize_tokens(user_ings)
-    scored = []
-    intent = _infer_dish_intent(user_ings)
-    intent_lower = intent.lower()
-    tortilla_mode = any("tortilla" in i.lower() for i in user_ings)
+    recipes: list[dict] = []
 
     for c in candidates:
         used = [i.get("name", "") for i in c.get("usedIngredients", [])]
@@ -103,21 +141,14 @@ def score_and_rank(user_ings: list[str], candidates: list[dict], top_k: int = 5)
 
         used_tokens = normalize_tokens(used)
         matched_tokens = used_tokens & user_tokens
-        matched = len(matched_tokens)
-        missing_ct = len(missed)
 
-        score = matched * 2 - missing_ct  # base score
+        match_ratio = len(matched_tokens) / max(len(user_tokens), 1)
+        if match_ratio < 0.5:  # require at least 50% overlap
+            continue
 
-        # Boost if title/summary contains inferred intent
-        title = (c.get("title") or "").lower()
-        summary = (c.get("summary") or "").lower()
-        if intent_lower and (intent_lower in title or intent_lower in summary):
-            score += 3
-        # Additional boost when tortilla is present and title mentions taco/fajita/wrap
-        if tortilla_mode and any(k in title for k in ["taco", "fajita", "quesadilla"]):
-            score += 4
+        score = int(match_ratio * 100)  # percent for UI bar
 
-        scored.append(
+        recipes.append(
             {
                 "id": c.get("id"),
                 "title": c.get("title"),
@@ -128,7 +159,6 @@ def score_and_rank(user_ings: list[str], candidates: list[dict], top_k: int = 5)
                 "source": "spoonacular",
             }
         )
-    # Drop zero-match recipes to avoid noisy suggestions.
-    scored = [r for r in scored if r["matched"]]
-    scored.sort(key=lambda x: x["score"], reverse=True)
-    return scored[:top_k]
+
+    recipes.sort(key=lambda r: (-r["score"], len(r["missing"])))
+    return recipes
