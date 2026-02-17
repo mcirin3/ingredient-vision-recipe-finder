@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { RankedRecipe } from '@/types/recipe';
 import dotenv from 'dotenv';
 
 // Load Spoonacular key if available (used only when hitting the real API).
@@ -30,7 +31,7 @@ const mockAnalyze = (page: Page, ingredients: string[]) =>
     })
   );
 
-const mockRecipes = (page: Page, recipes: any[]) =>
+const mockRecipes = (page: Page, recipes: RankedRecipe[]) =>
   page.route('**/recipes', (route) =>
     route.fulfill({
       status: 200,
@@ -395,7 +396,7 @@ test('loading indicators visible (TC-25)', async ({ page }) => {
   await expect(page.getByTestId('processing-indicator')).toBeVisible();
 });
 
-test('mobile view still usable (TC-26)', async ({ page, browser }) => {
+test('mobile view still usable (TC-26)', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 375, height: 667 } });
   const mobilePage = await context.newPage();
   mockUpload(mobilePage);
