@@ -136,6 +136,7 @@ export default function IngredientPreview({
                         {ingredient}
                         <button
                           onClick={() => handleRemoveIngredient(index)}
+                          aria-label="remove ingredient"
                           className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
                         >
                           <MdClose className="w-4 h-4" />

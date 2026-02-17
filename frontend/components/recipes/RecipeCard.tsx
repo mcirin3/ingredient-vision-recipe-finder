@@ -14,9 +14,10 @@ export default function RecipeCard({ recipe, onClick }: RecipeCardProps) {
   const missing = recipe.missing?.length ?? 0;
   const denominator = matched + missing || 1;
   const matchPercentage = Math.round((matched / denominator) * 100);
+  const missingPreview = (recipe.missing || []).slice(0, 3);
 
   return (
-    <Card hover onClick={onClick} className="h-full">
+    <Card hover onClick={onClick} className="h-full" data-testid={`recipe-card-${recipe.id ?? 'unknown'}`}>
       <div className="relative w-full h-48 bg-gray-200 rounded-t-lg overflow-hidden">
         {recipe.image ? (
           <Image
@@ -65,6 +66,13 @@ export default function RecipeCard({ recipe, onClick }: RecipeCardProps) {
               </div>
             )}
           </div>
+
+          {missingPreview.length > 0 && (
+            <div className="text-xs text-gray-600 space-y-1" data-testid="missing-preview">
+              <span className="font-semibold text-orange-700">Missing:</span>{' '}
+              <span>{missingPreview.join(', ')}{recipe.missing!.length > missingPreview.length ? '…' : ''}</span>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
