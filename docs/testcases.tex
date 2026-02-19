@@ -229,6 +229,43 @@ is reliable, reasonable, and demo-safe under realistic conditions.
 \end{itemize}
 \textbf{Demo Critical}
 
+\section{Cuisine Filter \& International Coverage}
+
+\subsection*{TC-28: Cuisine Parameter Forwarded}
+\textbf{Input:} Select ``Mexican'' cuisine with taco ingredients
+\begin{itemize}
+  \item Selected cuisine sent in recipes API request
+  \item Returned recipes match selected cuisine theme
+\end{itemize}
+
+\subsection*{TC-29: Vietnamese Cuisine Result}
+\textbf{Input:} Vietnamese cuisine selected
+\begin{itemize}
+  \item Pho-style recipe returned (e.g., Pho Bo)
+  \item Ingredients echoed back correctly
+\end{itemize}
+
+\subsection*{TC-30: American Cuisine Result}
+\textbf{Input:} American cuisine selected
+\begin{itemize}
+  \item Classic American dish returned (e.g., cheeseburger)
+  \item No cross-cuisine outliers
+\end{itemize}
+
+\subsection*{TC-31: Filipino Cuisine Result}
+\textbf{Input:} Filipino cuisine selected
+\begin{itemize}
+  \item Chicken adobo (or close variant) returned
+  \item Matches cultural flavor profile (soy/vinegar/garlic)
+\end{itemize}
+
+\subsection*{TC-32: Middle Eastern Cuisine Result}
+\textbf{Input:} Middle Eastern cuisine selected
+\begin{itemize}
+  \item Shawarma-style recipe returned
+  \item Spiced/rotisserie flavor profile preserved
+\end{itemize}
+
 \section{Final Demo Readiness Checklist}
 
 Before demo day, confirm:
