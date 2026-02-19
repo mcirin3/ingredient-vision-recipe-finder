@@ -19,6 +19,7 @@ export default function Home() {
   const [imageId, setImageId] = useState<string>('');
   const [detectedIngredients, setDetectedIngredients] = useState<string[]>([]);
   const [recipes, setRecipes] = useState<RankedRecipe[]>([]);
+  const [selectedMealType, setSelectedMealType] = useState<string | undefined>(undefined);
   const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
   const [selectedCuisine, setSelectedCuisine] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string>('');
@@ -52,13 +53,14 @@ export default function Home() {
   );
 
   const handleConfirmIngredients = useCallback(
-    async (ingredients: string[], cuisine?: string) => {
+    async (ingredients: string[], cuisine?: string, mealType?: string) => {
       setSelectedIngredients(ingredients);
       setSelectedCuisine(cuisine);
+      setSelectedMealType(mealType);
       setState('processing');
 
       try {
-        const searchResults = await searchRecipesByIngredients(ingredients, cuisine || undefined);
+        const searchResults = await searchRecipesByIngredients(ingredients, cuisine || undefined, mealType || undefined);
         setRecipes(searchResults);
         setState('recipes');
       } catch (err) {
@@ -236,15 +238,18 @@ export default function Home() {
         {/* Processing or Ingredients State */}
         {(state === 'processing' || state === 'ingredients') && imageUrl && (
           <IngredientPreview
-            imageUrl={imageUrl}
-            detectedIngredients={detectedIngredients}
-            isProcessing={state === 'processing'}
-            imageId={imageId}
-            onConfirm={handleConfirmIngredients}
-            onRetake={handleRetake}
-            selectedCuisine={selectedCuisine}
-            onCuisineChange={setSelectedCuisine}
-          />
+          imageUrl={imageUrl}
+          detectedIngredients={detectedIngredients}
+          isProcessing={state === 'processing'}
+          imageId={imageId}
+          onConfirm={handleConfirmIngredients}
+          onRetake={handleRetake}
+          selectedCuisine={selectedCuisine}
+          onCuisineChange={setSelectedCuisine}
+          selectedMealType={selectedMealType}
+          onMealTypeChange={setSelectedMealType}
+        />
+        
         )}
 
         {/* Recipes State */}

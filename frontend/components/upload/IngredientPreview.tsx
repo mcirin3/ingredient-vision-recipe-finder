@@ -11,10 +11,12 @@ interface IngredientPreviewProps {
   detectedIngredients: string[];
   isProcessing: boolean;
   imageId?: string;
-  onConfirm: (ingredients: string[], cuisine?: string) => void;
+  onConfirm: (ingredients: string[], cuisine?: string, mealType?: string) => void;
   onRetake: () => void;
   selectedCuisine?: string;
   onCuisineChange?: (value?: string) => void;
+  selectedMealType?: string;
+  onMealTypeChange?: (value?: string) => void;
 }
 
 export default function IngredientPreview({
@@ -26,10 +28,13 @@ export default function IngredientPreview({
   onRetake,
   selectedCuisine,
   onCuisineChange,
+  selectedMealType,
+  onMealTypeChange,
 }: IngredientPreviewProps) {
   const [ingredients, setIngredients] = useState<string[]>(detectedIngredients);
   const [newIngredient, setNewIngredient] = useState('');
   const [cuisine, setCuisine] = useState<string>(selectedCuisine || '');
+  const [mealType, setMealType] = useState<string>(selectedMealType || '');
 
   useEffect(() => {
     setIngredients(detectedIngredients);
@@ -40,6 +45,12 @@ export default function IngredientPreview({
       setCuisine(selectedCuisine);
     }
   }, [selectedCuisine]);
+
+  useEffect(() => {
+    if (selectedMealType !== undefined) {
+      setMealType(selectedMealType);
+    }
+  }, [selectedMealType]);
 
   const handleRemoveIngredient = (index: number) => {
     setIngredients(ingredients.filter((_, i) => i !== index));
@@ -61,13 +72,22 @@ export default function IngredientPreview({
 
   const handleConfirm = () => {
     if (ingredients.length > 0) {
-      onConfirm(ingredients, cuisine || undefined);
+      onConfirm(
+        ingredients,
+        cuisine || undefined,
+        mealType || undefined
+      );
     }
   };
 
   const handleCuisineChange = (value: string) => {
     setCuisine(value);
     onCuisineChange?.(value || undefined);
+  };
+
+  const handleMealTypeChange = (value: string) => {
+    setMealType(value);
+    onMealTypeChange?.(value || undefined);
   };
 
   return (
@@ -146,6 +166,7 @@ export default function IngredientPreview({
                   )}
                 </div>
 
+                {/* Add Ingredient */}
                 <div className="border-t pt-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Add more ingredients
@@ -169,18 +190,15 @@ export default function IngredientPreview({
                   </div>
                 </div>
 
+                {/* Cuisine Select */}
                 <div className="border-t pt-4 space-y-2">
-                  <label
-                    htmlFor="cuisine-select"
-                    className="block text-sm font-medium text-gray-700"
-                  >
+                  <label className="block text-sm font-medium text-gray-700">
                     Expected cuisine (optional)
                   </label>
                   <select
-                    id="cuisine-select"
                     value={cuisine}
                     onChange={(e) => handleCuisineChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white"
                   >
                     <option value="">All cuisines</option>
                     <option value="mexican">Mexican</option>
@@ -195,6 +213,25 @@ export default function IngredientPreview({
                     <option value="spanish">Spanish</option>
                     <option value="filipino">Filipino</option>
                     <option value="middle eastern">Middle Eastern</option>
+                  </select>
+                </div>
+
+                {/* Meal Type Select */}
+                <div className="border-t pt-4 space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Meal type (optional)
+                  </label>
+                  <select
+                    value={mealType}
+                    onChange={(e) => handleMealTypeChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white"
+                  >
+                    <option value="">Any meal</option>
+                    <option value="breakfast">Breakfast</option>
+                    <option value="lunch">Lunch</option>
+                    <option value="dinner">Dinner</option>
+                    <option value="snack">Snack</option>
+                    <option value="dessert">Dessert</option>
                   </select>
                 </div>
 

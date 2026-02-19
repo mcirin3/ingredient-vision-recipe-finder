@@ -63,6 +63,10 @@ ALIAS_MAP = {
     "avocado": "avocado",
     "lemon": "lemon",
     "lemons": "lemon",
+    "brioche": "bread",
+    "white bread": "bread",
+    "whole wheat bread": "bread",
+    "bread bun": "bread",
 }
 
 NOISE = {"plate", "bowl", "table", "countertop", "cup", "container", "paper", "plastic"}

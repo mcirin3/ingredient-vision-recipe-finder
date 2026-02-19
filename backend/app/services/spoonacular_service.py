@@ -54,23 +54,36 @@ def _infer_dish_intent(ingredients: list[str]) -> str:
     return " ".join(lower[:2]) if lower else ""
 
 
-def fetch_candidates(ingredients: list[str], limit: int = 50, cuisine: str | None = None) -> list[dict]:
+def fetch_candidates(
+    ingredients: list[str],
+    limit: int = 50,
+    cuisine: str | None = None,
+    meal_type: str | None = None,
+) -> list[dict]:
     """Fetch candidate recipes using complexSearch, biased to maximize ingredient overlap."""
     if not settings.spoonacular_api_key:
         return []
+    
+    # ✅ ADD THIS HERE
+    MEAL_TYPE_MAP = {
+        "breakfast": "breakfast",
+        "lunch": "main course",
+        "dinner": "main course",
+        "snack": "snack",
+        "dessert": "dessert",
+    }
 
     intent = _infer_dish_intent(ingredients)
     lower = [i.lower() for i in ingredients]
     has_tortilla = any("tortilla" in i for i in lower)
     has_steak = any("steak" in i or "beef" in i for i in lower)
 
-    # Force a taco-focused query when tortilla + steak/beef are present to avoid drifting results.
+    # Force a taco-focused query when tortilla + steak/beef are present
     query = "steak taco" if (has_tortilla and has_steak) else intent
 
     params = {
         "apiKey": settings.spoonacular_api_key,
         "query": query,
-        # spoonacular treats includeIngredients as a soft filter; keep it, but rely on ranking below.
         "includeIngredients": ",".join(ingredients),
         "number": limit,
         "addRecipeInformation": True,
@@ -78,16 +91,43 @@ def fetch_candidates(ingredients: list[str], limit: int = 50, cuisine: str | Non
         "instructionsRequired": False,
         "sort": "max-used-ingredients",
         "sortDirection": "desc",
-        "ranking": 2,  # prefer recipes that use more of the given ingredients
-        "type": "main course",
+        "ranking": 2,
     }
+    
+        # ✅ Apply meal type filter if provided
+    if meal_type:
+        mapped = MEAL_TYPE_MAP.get(meal_type.lower())
+        if mapped:
+            params["type"] = mapped
+    else:
+        # Default behavior if none selected
+        params["type"] = "main course"
+
+
+    # ✅ Cuisine filter
     if cuisine:
         params["cuisine"] = cuisine
+
+    # ✅ Meal type filter (Spoonacular expects "type")
+    # Only set it if user selected one.
+    # If none selected, default to main course (your old behavior).
+    if meal_type:
+        params["type"] = meal_type
+    else:
+        params["type"] = "main course"
+
+    print("===== SPOONACULAR DEBUG =====")
+    print("Meal type received:", meal_type)
+    print("Final params being sent:", params)
+    print("==============================")
     r = requests.get(SPOONACULAR_SEARCH, params=params, timeout=10)
+
     if r.status_code != 200:
         raise HTTPException(status_code=502, detail="Spoonacular error")
+
     data = r.json()
     return data.get("results", [])
+
 
 
 def fetch_recipe_details(recipe_id: int) -> dict:

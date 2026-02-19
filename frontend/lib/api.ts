@@ -46,21 +46,27 @@ export async function analyzeImage(s3Key: string): Promise<AnalyzeResponse> {
 // Recipe API
 export async function searchRecipesByIngredients(
   ingredients: string[],
-  cuisine?: string
-): Promise<RankedRecipe[]> {
-  const response = await fetch(`${API_BASE_URL}/recipes`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ingredients, cuisine }),
+  cuisine?: string,
+  mealType?: string
+) {
+  const res = await fetch(`${API_BASE_URL}/recipes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ingredients,
+      cuisine,
+      meal_type: mealType, // 👈 THIS is the missing piece
+    }),
   });
 
-  if (!response.ok) {
-    throw new ApiError(response.status, 'Failed to search recipes');
+  if (!res.ok) {
+    throw new Error("Failed to fetch recipes");
   }
 
-  const data = await response.json();
-  return data.recipes ?? [];
+  const data = await res.json();
+  return data.recipes;
 }
+
 
 export async function getRecipeDetails(recipeId: number): Promise<Partial<RankedRecipe>> {
   const response = await fetch(`${API_BASE_URL}/recipes/${recipeId}`);
