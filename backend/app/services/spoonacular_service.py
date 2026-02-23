@@ -63,11 +63,10 @@ def fetch_candidates(
     """Fetch candidate recipes using complexSearch, biased to maximize ingredient overlap."""
     if not settings.spoonacular_api_key:
         return []
-    
-    # ✅ ADD THIS HERE
+
     MEAL_TYPE_MAP = {
         "breakfast": "breakfast",
-        "lunch": "main course",
+        "lunch": "lunch",
         "dinner": "main course",
         "snack": "snack",
         "dessert": "dessert",
@@ -92,34 +91,17 @@ def fetch_candidates(
         "sort": "max-used-ingredients",
         "sortDirection": "desc",
         "ranking": 2,
+        "type": "main course",
     }
-    
-        # ✅ Apply meal type filter if provided
+
+    if cuisine:
+        params["cuisine"] = cuisine
+
     if meal_type:
         mapped = MEAL_TYPE_MAP.get(meal_type.lower())
         if mapped:
             params["type"] = mapped
-    else:
-        # Default behavior if none selected
-        params["type"] = "main course"
 
-
-    # ✅ Cuisine filter
-    if cuisine:
-        params["cuisine"] = cuisine
-
-    # ✅ Meal type filter (Spoonacular expects "type")
-    # Only set it if user selected one.
-    # If none selected, default to main course (your old behavior).
-    if meal_type:
-        params["type"] = meal_type
-    else:
-        params["type"] = "main course"
-
-    print("===== SPOONACULAR DEBUG =====")
-    print("Meal type received:", meal_type)
-    print("Final params being sent:", params)
-    print("==============================")
     r = requests.get(SPOONACULAR_SEARCH, params=params, timeout=10)
 
     if r.status_code != 200:

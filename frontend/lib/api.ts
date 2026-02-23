@@ -50,23 +50,22 @@ export async function searchRecipesByIngredients(
   mealType?: string
 ) {
   const res = await fetch(`${API_BASE_URL}/recipes`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       ingredients,
       cuisine,
-      meal_type: mealType, // 👈 THIS is the missing piece
+      meal_type: mealType,
     }),
   });
 
   if (!res.ok) {
-    throw new Error("Failed to fetch recipes");
+    throw new Error('Failed to search recipes');
   }
 
   const data = await res.json();
   return data.recipes;
 }
-
 
 export async function getRecipeDetails(recipeId: number): Promise<Partial<RankedRecipe>> {
   const response = await fetch(`${API_BASE_URL}/recipes/${recipeId}`);

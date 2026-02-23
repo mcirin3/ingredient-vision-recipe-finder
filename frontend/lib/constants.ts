@@ -10,6 +10,7 @@ export const MAX_RECIPES = 5;
 export const MESSAGES = {
   UPLOAD_ERROR: 'Failed to upload image. Please try again.',
   PROCESSING_ERROR: 'Failed to process image. Please try again.',
+  RECIPES_ERROR: 'Failed to search recipes. Please try again.',
   NO_RECIPES: 'No recipes found with the given ingredients. Try adding more ingredients!',
   FILE_TOO_LARGE: `File size must be less than ${MAX_FILE_SIZE / 1024 / 1024}MB`,
   INVALID_FILE_TYPE: 'Please upload a valid image file (JPEG or PNG)',

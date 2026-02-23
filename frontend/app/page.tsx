@@ -64,7 +64,7 @@ export default function Home() {
         setRecipes(searchResults);
         setState('recipes');
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : MESSAGES.PROCESSING_ERROR;
+        const errorMessage = err instanceof Error ? err.message : MESSAGES.RECIPES_ERROR;
         handleError(errorMessage);
       }
     },

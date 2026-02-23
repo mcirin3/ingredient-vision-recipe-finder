@@ -192,10 +192,11 @@ export default function IngredientPreview({
 
                 {/* Cuisine Select */}
                 <div className="border-t pt-4 space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="cuisine-select" className="block text-sm font-medium text-gray-700">
                     Expected cuisine (optional)
                   </label>
                   <select
+                    id="cuisine-select"
                     value={cuisine}
                     onChange={(e) => handleCuisineChange(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white"
@@ -218,10 +219,11 @@ export default function IngredientPreview({
 
                 {/* Meal Type Select */}
                 <div className="border-t pt-4 space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="meal-type-select" className="block text-sm font-medium text-gray-700">
                     Meal type (optional)
                   </label>
                   <select
+                    id="meal-type-select"
                     value={mealType}
                     onChange={(e) => handleMealTypeChange(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white"
