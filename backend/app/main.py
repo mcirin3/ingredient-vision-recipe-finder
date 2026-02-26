@@ -1,7 +1,7 @@
 import uuid
 from pathlib import Path
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, UploadFile, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api import health, recipes, vision
@@ -12,12 +12,31 @@ ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 
 app = FastAPI(title="Ingredient Vision API")
 
+# Allow local dev and the public IP used by the mobile/web clients.
+ALLOWED_ORIGINS = [
+    "http://localhost",
+    "http://localhost:19000",
+    "http://localhost:19006",
+    "http://127.0.0.1",
+    "http://127.0.0.1:19000",
+    "http://127.0.0.1:19006",
+    "http://13.218.93.177",
+    "https://13.218.93.177",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"http://localhost:\d+|http://127\.0\.0\.1:\d+",
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_credentials=True,
 )
+
+# Fallback handler so OPTIONS preflight always returns 204 with CORS headers
+@app.options("/{rest_of_path:path}")
+async def preflight_handler(rest_of_path: str) -> Response:  # pragma: no cover - simple CORS shim
+    return Response(status_code=204)
 
 app.include_router(health.router)
 app.include_router(vision.router)
