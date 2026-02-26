@@ -12,12 +12,14 @@ ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 
 app = FastAPI(title="Ingredient Vision API")
 
-# Allow local dev and the public IP used by the mobile/web clients.
+# Allow dev (Metro at :8081) plus any future web origins; uploads are public so we can be permissive.
 ALLOWED_ORIGINS = [
     "http://localhost",
+    "http://localhost:8081",
     "http://localhost:19000",
     "http://localhost:19006",
     "http://127.0.0.1",
+    "http://127.0.0.1:8081",
     "http://127.0.0.1:19000",
     "http://127.0.0.1:19006",
     "http://13.218.93.177",
@@ -26,11 +28,11 @@ ALLOWED_ORIGINS = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=["*"],  # allow all to prevent missing ACAO header during web uploads
     allow_origin_regex=r"http://localhost:\d+|http://127\.0\.0\.1:\d+",
     allow_methods=["*"],
     allow_headers=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
 )
 
 # Fallback handler so OPTIONS preflight always returns 204 with CORS headers
