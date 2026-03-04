@@ -16,6 +16,7 @@ ENV_DEFAULTS = {
     "aws_region": "us-east-1",
     "aws_s3_bucket": "test-bucket",
     "openai_api_key": "test",
+    "TESTING": "true",
 }
 for k, v in ENV_DEFAULTS.items():
     os.environ.setdefault(k, v)
