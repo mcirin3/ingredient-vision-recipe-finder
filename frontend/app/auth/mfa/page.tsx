@@ -89,6 +89,7 @@ export default function MfaPage() {
                   <div className="text-sm text-gray-700">Scan or copy this secret into your authenticator app</div>
                   {otpauthUrl && (
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(
                           otpauthUrl

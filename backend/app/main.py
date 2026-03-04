@@ -53,6 +53,21 @@ app.include_router(auth.router)
 app.include_router(vision.router)
 app.include_router(recipes.router)
 
+# In testing mode, allow routes without real auth by overriding dependency.
+if settings.testing:
+    from datetime import datetime
+
+    def _fake_user():
+        return User(
+            id=0,
+            email="test@example.com",
+            password_hash="",
+            mfa_enabled=False,
+            created_at=datetime.utcnow(),
+        )
+
+    app.dependency_overrides[get_current_user] = _fake_user
+
 
 @app.post("/upload-url")
 async def upload_url(

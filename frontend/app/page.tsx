@@ -26,7 +26,6 @@ export default function Home() {
   const [selectedCuisine, setSelectedCuisine] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string>('');
   const [showGuide, setShowGuide] = useState(false);
-  const [guideStep, setGuideStep] = useState<1 | 2 | 3>(1);
   const [menuOpen, setMenuOpen] = useState(false);
   const { token, user, clearAuth, hydrated } = useAuth();
   const router = useRouter();

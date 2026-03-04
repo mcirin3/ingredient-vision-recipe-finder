@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     spoonacular_api_key: str | None = None
     auth_secret_key: str = "OieBqhcWEWCvXpm8GzPaCnv7r6dqsqEWRRayMRR5t5Pqg3a9KNgZZcwvFzzZ-DTT"
     access_token_expire_minutes: int = 60 * 24
+    testing: bool = False
 
     class Config:
         env_file = Path(__file__).resolve().parent.parent / ".env"

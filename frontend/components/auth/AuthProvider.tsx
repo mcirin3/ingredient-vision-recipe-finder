@@ -16,21 +16,34 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return null;
+    try {
+      const parsed: AuthResponse = JSON.parse(stored);
+      return parsed.user;
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+  });
+
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return null;
+    try {
+      const parsed: AuthResponse = JSON.parse(stored);
+      return parsed.access_token;
+    } catch {
+      return null;
+    }
+  });
+
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const stored = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
-    if (stored) {
-      try {
-        const parsed: AuthResponse = JSON.parse(stored);
-        setUser(parsed.user);
-        setToken(parsed.access_token);
-      } catch {
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    }
     setHydrated(true);
   }, []);
 
