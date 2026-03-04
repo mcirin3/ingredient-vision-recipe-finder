@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { MdOutlineClose, MdError } from 'react-icons/md';
 import { FiLoader } from 'react-icons/fi';
 import { Button } from '@/components/ui/Button';
@@ -10,6 +10,8 @@ import RecipeList from '@/components/recipes/RecipeList';
 import { uploadImage, analyzeImage, searchRecipesByIngredients } from '@/lib/api';
 import { RankedRecipe } from '@/types/recipe';
 import { MESSAGES } from '@/lib/constants';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { useRouter } from 'next/navigation';
 
 type AppState = 'upload' | 'processing' | 'ingredients' | 'recipes' | 'error';
 
@@ -25,6 +27,15 @@ export default function Home() {
   const [error, setError] = useState<string>('');
   const [showGuide, setShowGuide] = useState(false);
   const [guideStep, setGuideStep] = useState<1 | 2 | 3>(1);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const { token, user, clearAuth, hydrated } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (hydrated && !token) {
+      router.replace('/auth');
+    }
+  }, [hydrated, token, router]);
 
   const handleError = useCallback((errorMessage: string) => {
     setError(errorMessage);
@@ -33,15 +44,19 @@ export default function Home() {
 
   const handleImageSelect = useCallback(
     async (file: File) => {
+      if (!token) {
+        router.push('/auth');
+        return;
+      }
       setImageUrl(URL.createObjectURL(file));
       setState('processing');
       setError('');
 
       try {
-        const result = await uploadImage(file);
+        const result = await uploadImage(file, token);
         setImageId(result.image_id);
 
-        const analysis = await analyzeImage(result.image_id);
+        const analysis = await analyzeImage(result.image_id, token);
         setDetectedIngredients(analysis.ingredients_normalized ?? []);
         setState('ingredients');
       } catch (err) {
@@ -49,18 +64,27 @@ export default function Home() {
         handleError(errorMessage);
       }
     },
-    [handleError]
+    [handleError, token, router]
   );
 
   const handleConfirmIngredients = useCallback(
     async (ingredients: string[], cuisine?: string, mealType?: string) => {
+      if (!token) {
+        router.push('/auth');
+        return;
+      }
       setSelectedIngredients(ingredients);
       setSelectedCuisine(cuisine);
       setSelectedMealType(mealType);
       setState('processing');
 
       try {
-        const searchResults = await searchRecipesByIngredients(ingredients, cuisine || undefined, mealType || undefined);
+        const searchResults = await searchRecipesByIngredients(
+          ingredients,
+          cuisine || undefined,
+          mealType || undefined,
+          token
+        );
         setRecipes(searchResults);
         setState('recipes');
       } catch (err) {
@@ -68,7 +92,7 @@ export default function Home() {
         handleError(errorMessage);
       }
     },
-    [handleError]
+    [handleError, token, router]
   );
 
   const handleRetake = useCallback(() => {
@@ -105,170 +129,247 @@ export default function Home() {
             <h1 className="text-2xl font-bold text-gray-900">
               🍳 Ingredient Vision
             </h1>
-            {state !== 'upload' && (
-              <button
-                onClick={handleStartOver}
-                className="text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <MdOutlineClose className="w-6 h-6" />
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setMenuOpen((v) => !v)}
+                >
+                  Menu
+                </Button>
+                {menuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        router.push('/');
+                      }}
+                    >
+                      Find recipes
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        router.push('/settings');
+                      }}
+                    >
+                      Settings
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        router.push('/about');
+                      }}
+                    >
+                      About
+                    </button>
+                  </div>
+                )}
+              </div>
+              {!user ? (
+                <Button variant="secondary" size="sm" onClick={() => router.push('/auth')}>
+                  Sign in
+                </Button>
+              ) : (
+                <>
+                  <span className="text-sm text-gray-700">Hi, {user.email}</span>
+                  <Button variant="outline" size="sm" onClick={() => { setMenuOpen(false); clearAuth(); }}>
+                    Sign out
+                  </Button>
+                </>
+              )}
+              {state !== 'upload' && (
+                <button
+                  onClick={handleStartOver}
+                  className="text-gray-600 hover:text-gray-900 transition-colors"
+                  title="Start over"
+                >
+                  <MdOutlineClose className="w-6 h-6" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </nav>
-
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
-        {/* Error State */}
-        {state === 'error' && error && (
-          <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-start gap-3">
-              <MdError className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-semibold text-red-900 mb-1">Error</h3>
-                <p className="text-red-800">{error}</p>
-                <button
-                  onClick={handleDismissError}
-                  className="mt-3 text-red-600 hover:text-red-700 font-medium text-sm"
-                >
-                  Try Again
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-      {/* Upload State */}
-      {state === 'upload' && !error && (
-        <div className="space-y-10">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div className="space-y-4">
-              <h2 className="text-3xl font-bold text-gray-900">Get recipe recommendations</h2>
-              <p className="text-gray-700">
-                Upload an ingredient photo, confirm what we detected, and get recipes tailored to what you have.
-              </p>
-              <Button
-                variant="secondary"
-                size="sm"
-                type="button"
-                onClick={() => setShowGuide((v) => !v)}
-                aria-expanded={showGuide}
-                data-testid="first-time-guide-btn"
-                className="inline-flex items-center gap-2"
-              >
-                {showGuide ? 'Hide First Time Guide' : 'First Time Guide'}
-              </Button>
-            </div>
-            <div>
-              <ImageUploader onImageSelect={handleImageSelect} onError={handleError} />
-            </div>
-          </div>
-
-          {showGuide && (
-            <section
-              className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm"
-              aria-label="First time guide"
-            >
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <h3 className="text-2xl font-bold text-gray-900">How it works</h3>
-                  <p className="text-gray-700">
-                    Follow these three steps to go from a quick photo to ready-to-cook recipes.
-                  </p>
-                  <div className="flex gap-2 flex-wrap">
-                    {[1, 2, 3].map((step) => (
-                      <button
-                        key={step}
-                        type="button"
-                        onClick={() => setGuideStep(step as 1 | 2 | 3)}
-                        className={`px-4 py-2 rounded-full text-sm font-semibold border transition ${
-                          guideStep === step
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white text-blue-700 border-blue-200 hover:border-blue-400'
-                        }`}
-                      >
-                        {`Step ${step}`}
-                      </button>
-                    ))}
-                  </div>
-                  {guideStep === 1 && (
-                    <div className="p-4 rounded-lg bg-blue-50 border border-blue-100">
-                      <p className="font-semibold text-gray-900">Snap & Upload</p>
-                      <p className="text-sm text-gray-700 mt-1">
-                        Take a clear photo of all visible ingredients, then drop it into the uploader.
-                      </p>
-                    </div>
-                  )}
-                  {guideStep === 2 && (
-                    <div className="p-4 rounded-lg bg-blue-50 border border-blue-100">
-                      <p className="font-semibold text-gray-900">Confirm Ingredients</p>
-                      <p className="text-sm text-gray-700 mt-1">
-                        Remove non-food items, add anything we missed, and optionally pick a cuisine to focus results.
-                      </p>
-                    </div>
-                  )}
-                  {guideStep === 3 && (
-                    <div className="p-4 rounded-lg bg-blue-50 border border-blue-100">
-                      <p className="font-semibold text-gray-900">Get Recipes</p>
-                      <p className="text-sm text-gray-700 mt-1">
-                        We show matches with missing ingredients listed so you know what else you need.
-                      </p>
-                    </div>
-                  )}
-                </div>
-                <div className="relative w-full h-64 rounded-xl overflow-hidden bg-gradient-to-br from-blue-100 via-white to-blue-50 border border-blue-100">
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6" data-testid="guide-media">
-                    <div className="w-24 h-24 rounded-full bg-white shadow-inner flex items-center justify-center mb-4">
-                      <svg className="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <p className="text-gray-800 font-semibold">See the flow</p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Upload ➜ Confirm ➜ Recipes. Missing items are highlighted on each card.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </section>
-          )}
+      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
+        {/* Ambient background shapes */}
+        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute -top-16 -left-24 h-64 w-64 rounded-full bg-amber-200 blur-3xl opacity-60" />
+          <div className="absolute top-32 -right-24 h-64 w-64 rounded-full bg-orange-300 blur-3xl opacity-50" />
+          <div className="absolute bottom-0 left-1/3 h-48 w-48 rounded-full bg-yellow-200 blur-3xl opacity-40" />
         </div>
-      )}
-
-        {/* Processing or Ingredients State */}
-        {(state === 'processing' || state === 'ingredients') && imageUrl && (
-          <IngredientPreview
-          imageUrl={imageUrl}
-          detectedIngredients={detectedIngredients}
-          isProcessing={state === 'processing'}
-          imageId={imageId}
-          onConfirm={handleConfirmIngredients}
-          onRetake={handleRetake}
-          selectedCuisine={selectedCuisine}
-          onCuisineChange={setSelectedCuisine}
-          selectedMealType={selectedMealType}
-          onMealTypeChange={setSelectedMealType}
-        />
-        
+        {!token && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-orange-50 px-5 py-4 shadow-sm">
+            <div className="space-y-1">
+              <p className="font-semibold text-amber-900">Sign in to use the recipe finder</p>
+              <p className="text-sm text-amber-700">Secure your uploads and keep your recipes personalized.</p>
+            </div>
+            <Button variant="accent" size="sm" onClick={() => router.push('/auth')}>
+              Go to login
+            </Button>
+          </div>
         )}
 
-        {/* Recipes State */}
-        {state === 'recipes' && (
-          <RecipeList
-            recipes={recipes}
-            userIngredients={selectedIngredients}
-            onStartOver={handleStartOver}
-          />
-        )}
-
-        {/* No Results State */}
-        {state === 'processing' && recipes.length === 0 && (
-          <div className="flex items-center justify-center min-h-[300px]" data-testid="processing-indicator">
-            <div className="text-center">
-              <FiLoader className="animate-spin h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-              <p className="text-gray-600">Searching for recipes...</p>
+        {hydrated && !token && (
+          <div className="min-h-[300px] flex items-center justify-center">
+            <div className="text-center text-gray-700 space-y-2">
+              <div className="text-lg font-semibold">Redirecting to login…</div>
+              <div className="text-sm">Please sign in or create an account to continue.</div>
             </div>
           </div>
+        )}
+
+        {token && (
+          <>
+            {/* Error State */}
+            {state === 'error' && error && (
+              <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <MdError className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-red-900 mb-1">Error</h3>
+                    <p className="text-red-800">{error}</p>
+                    <button
+                      onClick={handleDismissError}
+                      className="mt-3 text-red-600 hover:text-red-700 font-medium text-sm"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Upload State */}
+            {state === 'upload' && !error && (
+              <div className="space-y-10">
+                <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-8 items-stretch">
+                  <div className="relative overflow-hidden rounded-3xl border border-gray-100 bg-white/80 backdrop-blur shadow-lg p-8">
+                    <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-white to-amber-50 opacity-70 pointer-events-none" />
+                    <div className="relative space-y-4">
+                      <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 text-amber-800 px-3 py-1 text-xs font-semibold">
+                        New • Faster results
+                      </div>
+                      <h2 className="text-3xl md:text-4xl font-bold text-gray-900 leading-tight">
+                        Turn your fridge photo into dinner ideas in seconds.
+                      </h2>
+                      <p className="text-gray-700 text-lg">
+                        Snap, upload, confirm ingredients, then see curated recipes with missing items highlighted.
+                      </p>
+                      <div className="grid sm:grid-cols-3 gap-3">
+                        {[
+                          { label: 'Avg. time', value: '8s' },
+                          { label: 'Top recipes', value: '5 shown' },
+                          { label: 'Supports', value: 'JPEG / PNG' },
+                        ].map((stat) => (
+                          <div key={stat.label} className="rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
+                            <div className="text-xs uppercase tracking-wide text-gray-500">{stat.label}</div>
+                            <div className="text-lg font-semibold text-gray-900">{stat.value}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          variant="accent"
+                          size="md"
+                          onClick={() => setShowGuide((v) => !v)}
+                          aria-expanded={showGuide}
+                          data-testid="first-time-guide-btn"
+                          className="inline-flex items-center gap-2"
+                        >
+                          {showGuide ? 'Hide walkthrough' : 'Show walkthrough'}
+                        </Button>
+                        <span className="text-sm text-gray-600">No sign-in? Use the Menu &rarr; Login.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-amber-100 bg-white shadow-xl p-6">
+                    <div className="mb-4 text-sm font-semibold text-amber-800 flex items-center gap-2">
+                      <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                      Ready to upload
+                    </div>
+                    <ImageUploader onImageSelect={handleImageSelect} onError={handleError} />
+                  </div>
+                </div>
+
+                <div
+                  className={`transition-all duration-400 ease-out ${
+                    showGuide ? 'max-h-[900px] opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-2'
+                  } overflow-hidden`}
+                >
+                  <section
+                    className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm"
+                    aria-label="First time guide"
+                  >
+                    <div className="grid md:grid-cols-3 gap-6">
+                      {[
+                        {
+                          title: '1) Snap & Upload',
+                          body: 'Use good lighting and fit all items in frame. JPEG/PNG up to 10MB.',
+                        },
+                        {
+                          title: '2) Confirm & Tweak',
+                          body: 'Remove non-food items, add missing ones, pick cuisine and meal type.',
+                        },
+                        {
+                          title: '3) Get Recipes',
+                          body: 'We rank by match quality and call out missing ingredients up front.',
+                        },
+                      ].map((step, idx) => (
+                        <div key={step.title} className="rounded-xl border border-gray-100 bg-gradient-to-br from-gray-50 to-white p-4 shadow-sm">
+                          <div className="text-xs font-semibold text-amber-700 mb-2">Step {idx + 1}</div>
+                          <h3 className="text-lg font-semibold text-gray-900">{step.title}</h3>
+                          <p className="text-sm text-gray-700 mt-1">{step.body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+              </div>
+            )}
+
+            {/* Processing or Ingredients State */}
+            {(state === 'processing' || state === 'ingredients') && imageUrl && (
+              <IngredientPreview
+              imageUrl={imageUrl}
+              detectedIngredients={detectedIngredients}
+              isProcessing={state === 'processing'}
+              imageId={imageId}
+              onConfirm={handleConfirmIngredients}
+              onRetake={handleRetake}
+              selectedCuisine={selectedCuisine}
+              onCuisineChange={setSelectedCuisine}
+              selectedMealType={selectedMealType}
+              onMealTypeChange={setSelectedMealType}
+            />
+            
+            )}
+
+            {/* Recipes State */}
+            {state === 'recipes' && (
+              <RecipeList
+                recipes={recipes}
+                userIngredients={selectedIngredients}
+                onStartOver={handleStartOver}
+              />
+            )}
+
+            {/* No Results State */}
+            {state === 'processing' && recipes.length === 0 && (
+              <div className="flex items-center justify-center min-h-[300px]" data-testid="processing-indicator">
+                <div className="text-center">
+                  <FiLoader className="animate-spin h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+                  <p className="text-gray-600">Searching for recipes...</p>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </main>
 
@@ -285,3 +386,4 @@ export default function Home() {
     </div>
   );
 }
+

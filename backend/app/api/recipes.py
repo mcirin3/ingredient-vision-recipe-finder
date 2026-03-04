@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from ..dependencies import get_current_user
+from ..models.user import User
 from ..services.spoonacular_service import (
     fetch_candidates,
     fetch_recipe_details,
@@ -32,7 +34,9 @@ class RecipesResponse(BaseModel):
 
 
 @router.post("", response_model=RecipesResponse)
-async def get_recipes(payload: RecipesRequest):
+async def get_recipes(
+    payload: RecipesRequest, current_user: User = Depends(get_current_user)
+):
     if not payload.ingredients:
         raise HTTPException(status_code=400, detail="ingredients required")
 
@@ -42,5 +46,7 @@ async def get_recipes(payload: RecipesRequest):
 
 
 @router.get("/{recipe_id}")
-async def get_recipe_details(recipe_id: int):
+async def get_recipe_details(
+    recipe_id: int, current_user: User = Depends(get_current_user)
+):
     return fetch_recipe_details(recipe_id)

@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from ..dependencies import get_current_user
+from ..models.user import User
 from ..services.normalization_service import normalize_labels
 from ..services.vision_service import extract_labels_from_image
 
@@ -17,7 +19,9 @@ class AnalyzeResponse(BaseModel):
 
 
 @router.post("", response_model=AnalyzeResponse)
-async def analyze_image(payload: AnalyzeRequest):
+async def analyze_image(
+    payload: AnalyzeRequest, current_user: User = Depends(get_current_user)
+):
     if not payload.s3_key:
         raise HTTPException(status_code=400, detail="s3_key required")
 

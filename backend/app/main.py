@@ -1,16 +1,24 @@
 import uuid
 from pathlib import Path
 
-from fastapi import FastAPI, File, HTTPException, UploadFile, Response
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api import health, recipes, vision
+from .api import auth, health, recipes, vision
 from .core.config import settings
+from .dependencies import get_current_user
+from .db import init_db
+from .models.user import User
 from .services import s3_client
 
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 
 app = FastAPI(title="Ingredient Vision API")
+
+# Ensure tables exist on startup
+@app.on_event("startup")
+def on_startup():
+    init_db()
 
 # Allow dev (Metro at :8081) plus any future web origins; uploads are public so we can be permissive.
 ALLOWED_ORIGINS = [
@@ -41,12 +49,15 @@ async def preflight_handler(rest_of_path: str) -> Response:  # pragma: no cover 
     return Response(status_code=204)
 
 app.include_router(health.router)
+app.include_router(auth.router)
 app.include_router(vision.router)
 app.include_router(recipes.router)
 
 
 @app.post("/upload-url")
-async def upload_url(content_type: str = "image/jpeg"):
+async def upload_url(
+    content_type: str = "image/jpeg", current_user: User = Depends(get_current_user)
+):
     """Return a presigned PUT so the frontend can upload directly to S3."""
     key = f"{settings.aws_s3_prefix}{uuid.uuid4().hex}.jpg"
     url = s3_client.presigned_put(key, content_type)
@@ -54,7 +65,9 @@ async def upload_url(content_type: str = "image/jpeg"):
 
 
 @app.post("/upload-image")
-async def upload_image(image: UploadFile = File(...)):
+async def upload_image(
+    image: UploadFile = File(...), current_user: User = Depends(get_current_user)
+):
     """
     Optional direct upload endpoint (bypasses presigned PUT).
     """

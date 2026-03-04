@@ -1,0 +1,4 @@
+# Ignore SQLite database files generated locally.
+*.db
+*.db-shm
+*.db-wal

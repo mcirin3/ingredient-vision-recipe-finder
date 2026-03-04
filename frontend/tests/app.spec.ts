@@ -9,6 +9,17 @@ dotenv.config(); // fallback to frontend/.env if present
 const fixtureValid = 'tests/fixtures/steak_taco.jpg';
 const fixtureBadType = 'tests/fixtures/bad_type.txt';
 
+const authPayload = {
+  access_token: 'test-token',
+  token_type: 'bearer',
+  user: {
+    id: 1,
+    email: 'tester@example.com',
+    mfa_enabled: false,
+    created_at: new Date().toISOString(),
+  },
+};
+
 // Shared helpers
 const mockUpload = (page: Page) =>
   page.route('**/upload-image', (route) =>
@@ -47,7 +58,14 @@ function mockCommonRoutes(page: Page) {
   mockAnalyze(page, ['beef', 'cilantro', 'onion', 'garlic', 'broth', 'rice']);
 }
 
+async function primeAuth(page: Page) {
+  await page.addInitScript(({ payload }) => {
+    window.localStorage.setItem('iv_token', JSON.stringify(payload));
+  }, { payload: authPayload });
+}
+
 test('unsupported file shows friendly error (TC-2)', async ({ page }) => {
+  await primeAuth(page);
   await page.goto('http://localhost:3000');
   await page.setInputFiles('input[type=file]', fixtureBadType);
   await expect(page.getByText(/valid image file/i)).toBeVisible();
@@ -92,6 +110,7 @@ test('ground beef street tacos are returned (recipes flow)', async ({ page }) =>
     })
   );
 
+  await primeAuth(page);
   await page.goto('http://localhost:3000');
   await page.setInputFiles('input[type=file]', fixtureValid);
 
@@ -148,6 +167,7 @@ test('cuisine filter is sent to recipes API', async ({ page }) => {
     });
   });
 
+  await primeAuth(page);
   await page.goto('http://localhost:3000');
   await page.setInputFiles('input[type=file]', fixtureValid);
 
@@ -175,6 +195,7 @@ test('valid image upload shows processing then ingredients (TC-1)', async ({ pag
     });
   });
   mockRecipes(page, []);
+  await primeAuth(page);
   await page.goto('http://localhost:3000');
   await page.setInputFiles('input[type=file]', fixtureValid);
   await expect(page.getByText(/Processing Your Image/i)).toBeVisible();
@@ -185,12 +206,14 @@ test('large image fails gracefully (TC-3)', async ({ page }) => {
   await page.route('**/upload-image', (route) =>
     route.fulfill({ status: 413, contentType: 'application/json', body: '{}' })
   );
+  await primeAuth(page);
   await page.goto('http://localhost:3000');
   await page.setInputFiles('input[type=file]', fixtureValid);
   await expect(page.getByText(/Failed to upload/i)).toBeVisible();
 });
 
 test('empty submission blocked (TC-4)', async ({ page }) => {
+  await primeAuth(page);
   await page.goto('http://localhost:3000');
   await expect(page.getByRole('button', { name: /find recipes/i })).toHaveCount(0);
 });
