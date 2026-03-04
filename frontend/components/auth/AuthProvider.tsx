@@ -41,11 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   });
 
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
+  const [hydrated, setHydrated] = useState(() => typeof window !== 'undefined');
 
   const setAuth = useCallback((payload: AuthResponse) => {
     setUser(payload.user);
